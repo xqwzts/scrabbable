@@ -5,13 +5,12 @@
   </head>
   <body>
     <div id="board"></div>
-    <div id="scoreholder">
-      <ul>
-        <li><span>vic</span><span>123</span></li>
-        <li><span>bob</span><span>32</span></li>
-      </ul>
-    </div>
+    <ul id="scoreholder">
+      <li><span class="player-name">vic</span><span class="player-score"></span></li>
+    </ul>
     <div id="rack"></div>
+    <input id="submitButton" type="submit" disabled="disabled" value="submit"/>
+    <input id="passButton" type="submit" disabled="enabled" value="pass"/>
     <script src="js/jquery-2.1.1.min.js"></script>
     <script src="js/main.js"></script>
     <script src="js/jquery-ui.min.js"></script>
@@ -47,4 +46,5 @@ x- Allow drag and drop to place letters on the board
     - invalid: alert(invalid) do nothing
 18- Display player name and score
 19- Implement game loop
+20- Special start square
 -->

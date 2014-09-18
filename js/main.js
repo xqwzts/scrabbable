@@ -88,72 +88,7 @@ $(function() {
   createGameBoard();
   loadLetters();
   fillRack();
-
-  $("#rack").sortable({
-    connectWith: "#board .row .tile"
-
-  });
-
-  $("#board .row .tile").droppable({
-    accept: ".tile",
-    tolerance: "intersect",
-    drop: function(e, u) {
-      var targetTile = this;
-      var draggedTile = u.draggable;
-
-      // make sure it was dropped in a row tile:
-      if (!($(targetTile).hasClass("tile") && $(targetTile).parent().hasClass("row") && ($(targetTile).children().length == 0))) {
-        return;
-      }
-
-      $(draggedTile).detach();
-
-      var clone = draggedTile.clone()
-      $(targetTile).append(clone);
-      $(targetTile).droppable("disable");
-
-      clone.removeAttr("style");
-      clone.addClass("tile dirty");
-
-      delete draggedTile;
-
-      clone.draggable({
-        connectToSortable: "#rack",
-        helper: "clone",
-        snap: "#board .tile",
-        snapMode: "outer",
-        start: function(ev, ui) {
-          if ($(this).parent().hasClass("tile")) {
-            $(this).parent().droppable("enable");
-          }
-        },
-        stop: function() {
-          if ($(this).parent().hasClass("tile")) {
-            $(this).parent().droppable("disable");
-          }
-        },
-        revert: function(targ) {
-          if (targ == false) {
-            return true;
-          }
-
-          var revert = true;
-
-          if (targ.hasClass("tile")) {
-            revert = false;
-          }
-
-          if (targ.attr("id") == "rack") {
-            $(this).detach();
-            revert = false;
-          }
-
-          return revert;
-        }
-      });
-    }
-  });
-
+  setupDraggability();
 });
 
 createGameBoard = function() {
@@ -239,4 +174,188 @@ getLetterScore = function(letter) {
       return LETTERS[i]["score"];
     }
   }
+}
+
+setupDraggability = function() {
+
+  $("#rack").sortable({
+    connectWith: "#board .row .tile",
+    receive: function() {
+      setTimeout(checkSubmitability, 50);
+    }
+  });
+
+  $("#board .row .tile").droppable({
+    accept: ".tile",
+    tolerance: "intersect",
+    drop: function(e, u) {
+      var targetTile = this;
+      var draggedTile = u.draggable;
+
+      // make sure it was dropped in a row tile:
+      if (!($(targetTile).hasClass("tile") && $(targetTile).parent().hasClass("row") && ($(targetTile).children().length == 0))) {
+        return;
+      }
+
+      $(draggedTile).detach();
+
+      var clone = draggedTile.clone()
+      $(targetTile).append(clone);
+      $(targetTile).droppable("disable");
+
+      clone.removeAttr("style");
+      clone.addClass("tile dirty");
+
+      delete draggedTile;
+
+      setTimeout(checkSubmitability, 50);
+
+      clone.draggable({
+        connectToSortable: "#rack",
+        helper: "clone",
+        snap: "#board .tile",
+        snapMode: "outer",
+        start: function(ev, ui) {
+          if ($(this).parent().hasClass("tile")) {
+            $(this).parent().droppable("enable");
+          }
+        },
+        stop: function() {
+          if ($(this).parent().hasClass("tile")) {
+            $(this).parent().droppable("disable");
+          }
+        },
+        revert: function(targ) {
+          if (targ == false) {
+            return true;
+          }
+
+          var revert = true;
+
+          if (targ.hasClass("tile")) {
+            revert = false;
+          }
+
+          if (targ.attr("id") == "rack") {
+            $(this).detach();
+            revert = false;
+          }
+
+          return revert;
+        }
+      });
+    }
+  });
+}
+
+checkSubmitability = function() {
+  // get all dirty tiles on the board
+  var dirtyTiles = $("#board").find(".dirty");
+
+  // No dirty tiles means nothing placed on the board, enable the pass button
+  if (dirtyTiles.length == 0) {
+    enablePassButton();
+    return;
+  }
+
+  disablePassButton();
+
+  var validDirtyTiles = true;
+
+  // If we have dirty tiles make sure they're in valid positions
+  // 1. unless this is the first word then they must be attached to another used tile on the board
+
+
+  // 2. all dirty must be in either the same row or column
+  if (validDirtyTiles) {
+    var firstCol = $(dirtyTiles[0]).parent().data("col");
+    var firstRow = $(dirtyTiles[0]).parent().parent().data("row");
+    console.log(firstRow + ":" + firstCol);
+    var allColsMatch = true;
+    var allRowsMatch = true;
+    for (var i = 1; i < dirtyTiles.length; i++) {
+      if (allColsMatch) {
+        var currentCol = $(dirtyTiles[i]).parent().data("col");
+        if (currentCol != firstCol) {
+          allColsMatch = false;
+        }
+      }
+      if (allRowsMatch) {
+        var currentRow = $(dirtyTiles[i]).parent().parent().data("row");
+        if (currentRow != firstRow) {
+          allRowsMatch = false;
+        }
+      }
+    }
+    if (!allColsMatch && !allRowsMatch) {
+      validDirtyTiles = false;
+    }
+  }
+
+  // 3. all tiles must be connected: there can be no empty tiles between them
+  for (var i = 0; i < dirtyTiles.length; i++) {
+    if (!noTileIsAnIsland(dirtyTiles[i])) {
+      validDirtyTiles = false;
+      break;
+    }
+  }
+
+  if (validDirtyTiles) {
+    enableSubmitButton(); 
+  } else {
+    disableSubmitButton();
+  }
+}
+
+noTileIsAnIsland = function(tile) {
+  // check all 4 adjancent tiles and return true if any one of them has another tile, dirty or not, so long as it isn't empty
+  var tileCol = $(tile).parent().data("col");
+  var tileRow = $(tile).parent().parent().data("row");
+
+  if (tileRow > 1) {
+    // 1. check above
+    if (getTileDiv(tileRow-1, tileCol).children().length > 0) {
+      return true;
+    }
+  }
+
+  if (tileRow < 15) {
+    // 2. check below
+    if (getTileDiv(tileRow+1, tileCol).children().length > 0) {
+      return true;
+    }
+  }
+
+  if (tileCol > 1) {
+    // 3. check left
+    if (getTileDiv(tileRow, tileCol-1).children().length > 0) {
+      return true;
+    }
+  }
+
+  if (tileCol < 15) {
+    // 4. check right
+    if (getTileDiv(tileRow, tileCol+1).children().length > 0) {
+      return true;
+    }
+  }
+
+  return false;
+
+}
+
+enableSubmitButton = function() {
+  $("#submitButton").removeAttr("disabled");
+}
+
+disableSubmitButton = function() {
+  $("#submitButton").attr("disabled", "disabled");
+}
+
+enablePassButton = function() {
+  $("#passButton").removeAttr("disabled");
+}
+
+disablePassButton = function() {
+  $("#passButton").attr("disabled", "disabled");
 }
