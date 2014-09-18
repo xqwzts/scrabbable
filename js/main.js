@@ -88,6 +88,80 @@ $(function() {
   createGameBoard();
   loadLetters();
   fillRack();
+
+  $("#rack").sortable({
+    connectWith: "#board .row .tile"
+
+  });
+
+  $("#board .row .tile").droppable({
+    accept: ".tile",
+    tolerance: "intersect",
+    drop: function(e, u) {
+     targetTile = this;
+      draggedTile = u.draggable;
+      console.log(targetTile, draggedTile);
+
+      // make sure it was dropped in a row tile:
+      if (!($(targetTile).hasClass("tile") && $(targetTile).parent().hasClass("row") && ($(targetTile).children().length == 0))) {
+        return;
+      }
+
+      $(draggedTile).detach();
+
+      var clone = draggedTile.clone()
+      $(targetTile).append(clone);
+
+      clone.removeAttr("style");
+      clone.addClass("tile dirty");
+
+      delete draggedTile;
+
+      clone.draggable({
+        connectToSortable: "#rack",
+        helper: "clone",
+        snap: "#board .tile",
+        snapMode: "outer",
+        revert: function(targ) {
+          if (targ == false) {
+            return true;
+          }
+
+          if (targ.hasClass("tile") || targ.attr("id") == "rack") {
+            $(this).detach();
+            return false;
+          }
+
+          return true;
+        }
+      });
+
+
+      // draggedTile.detach();
+      // // u.draggable.detach().appendTo($(this));
+      // $(this).append(newTile);
+
+      // $(draggedTile).detach();
+      // $(draggedTile).appendTo($(targetTile));
+
+      // when the turn ends the details will be copied over to this board tile and the sortable will be deleted, until then just snap it in place
+      // so it can still be dragged around and even returned to the rack!
+
+      // var letterAndScore = $(draggedTile).children();
+
+      // // place the letters in this row tile
+      // $(targetTile).addClass("dirty").append(letterAndScore).draggable({
+      //   connectToSortable: "#rack",
+      //   containment: "#rack #board"
+      // });
+
+
+      // // destroy the original rack tile
+      // $(draggedTile).detach();
+      // delete draggedTile;
+    }
+  });
+
 });
 
 createGameBoard = function() {
