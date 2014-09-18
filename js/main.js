@@ -1,5 +1,36 @@
 var ROW_COUNT = 15;
 var COL_COUNT = 15;
+var RACK_COUNT = 7;
+
+var LETTERS = [
+  { "letter": "", "count": 2, "score": 0 },
+  { "letter": "E", "count": 12, "score": 1 },
+  { "letter": "A","count": 9,"score": 1 },
+  { "letter": "I", "count": 9, "score": 1 },
+  { "letter": "O", "count": 8, "score": 1 },
+  { "letter": "N", "count": 6, "score": 1 },
+  { "letter": "R", "count": 6, "score": 1 },
+  { "letter": "T", "count": 6, "score": 1 },
+  { "letter": "L", "count": 4, "score": 1 },
+  { "letter": "S", "count": 4, "score": 1 },
+  { "letter": "U", "count": 4, "score": 1 },
+  { "letter": "D", "count": 4, "score": 2 },
+  { "letter": "G", "count": 3, "score": 2 },
+  { "letter": "B", "count": 2, "score": 3 },
+  { "letter": "C", "count": 2, "score": 3 },
+  { "letter": "M", "count": 2, "score": 3 },
+  { "letter": "P", "count": 2, "score": 3 },
+  { "letter": "F", "count": 2, "score": 4 },
+  { "letter": "H", "count": 2, "score": 4 },
+  { "letter": "V", "count": 2, "score": 4 },
+  { "letter": "W", "count": 2, "score": 4 },
+  { "letter": "Y", "count": 2, "score": 4 },
+  { "letter": "K", "count": 1, "score": 5 },
+  { "letter": "J", "count": 1, "score": 8 },
+  { "letter": "X", "count": 1, "score": 8 },
+  { "letter": "Q", "count": 1, "score": 10 },
+  { "letter": "Z", "count": 1, "score": 10 }
+]
 
 var SPECIAL_TILES = [
   {
@@ -49,8 +80,14 @@ var SPECIAL_TILES = [
   }
 ];
 
+
+var letter_bag = [];
+var player_rack = [];
+
 $(function() {
   createGameBoard();
+  loadLetters();
+  fillRack();
 });
 
 createGameBoard = function() {
@@ -98,3 +135,42 @@ getTileDiv = function(row, col) {
   var board = $("#board");
   return board.children(".row[data-row='" + row + "']").children(".tile[data-col='" + col + "']");
 };
+
+loadLetters = function() {
+  // populate the letter_bag array based on the frequency of letters in LETTERS
+  for (var i = 0; i < LETTERS.length; i++) {
+    var letterObj = LETTERS[i];
+    var letter = letterObj["letter"];
+    var count = letterObj["count"];
+    for (k = 0; k < count; k++) {
+      letter_bag.push(letter);
+    }
+  }
+}
+
+fillRack = function() {
+  while (player_rack.length < RACK_COUNT) {
+    var letter = getLetterFromBag();
+    player_rack.push(letter);
+
+    var letterScore = getLetterScore(letter);
+
+    $("#rack").append("<div class='tile'><span class='letter'>" + letter + "</span><span class='letter-score'>" + letterScore + "</span></div>");
+  }
+}
+
+getLetterFromBag = function() {
+  if (letter_bag.length > 0) {
+    var randomIndex = Math.floor(Math.random() * letter_bag.length);
+    var letter = letter_bag.splice(randomIndex, 1)[0];
+    return letter;
+  }
+}
+
+getLetterScore = function(letter) {
+  for (var i = 0; i < LETTERS.length; i++) {
+    if (LETTERS[i]["letter"] == letter) {
+      return LETTERS[i]["score"];
+    }
+  }
+}

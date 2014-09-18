@@ -4,16 +4,9 @@
     <link rel="stylesheet" type="text/css" href="css/main.css"></link>
   </head>
   <body>
-    <div class="tileTempl">
-      <span class="letter">V</span>
-      <span class="counter">3</span>
-    </div>
-    <div class="tileTempl">
-      <span class="letter">X</span>
-      <span class="counter">5</span>
-    </div>
-
     <div id="board">
+    </div>
+    <div id="rack">
     </div>
     <script src="js/jquery-2.1.1.min.js"></script>
     <script src="js/main.js"></script>
@@ -29,13 +22,19 @@ x- Tile with data-row data-col props for networking
 x- Allow highlighting individual tiles on mouseover
 x- Css for tiles
 x- Css for bonus info on tile
-5- Allow clicking tiles [do nothing but echo tile position row:col]
+x- Allow clicking tiles [do nothing but echo tile position row:col]
 x- Dynamic grid building: json info rows/cols
 x- Special tiles from json: row#, col#, classname
 8- Load grid/tile info json from file
-9- Don't change mouse curser on tile text [letters/specials]
+x- Don't change mouse curser on tile text [letters/specials]
       cursor: pointer [tile]
       cursor: grab [droppable letters]
       cursor: grabbing [dragging latter to drop]
-
+x- Generate letter bag from json [letter/count/score]
+x- Select random letters into user's rack
+12- Localization based on https://en.wikipedia.org/wiki/Scrabble_letter_distributions
+13- When the last letter is drawn from the bag... notify bag empty
+x- Draw player rack div
+15- Allow drag and drop to reorder letters in the rack
+16- Allow drag and drop to place letters on the board
 -->
