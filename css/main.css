@@ -40,7 +40,7 @@
 }
 
 .tile.double-letter {
-    background-color: #6BB5E6;
+    background-color: #66D3F4;
 }
 
 .tile.double-letter:empty::before {
@@ -52,7 +52,7 @@
 }
 
 .tile.double-word {
-    background-color: #C97F6C;
+    background-color: #FF7C7C;
 }
 
 .tile.double-word:empty::before {
@@ -63,28 +63,28 @@
     content: "double word";
 }
 
-.tile.tripple-letter {
+.tile.triple-letter {
     background-color: #0E7AC7;
 }
 
-.tile.tripple-letter:empty::before {
+.tile.triple-letter:empty::before {
     font-variant: small-caps;
     font-size: 7pt;
     line-height: 10pt;
     text-align: center;
-    content: "tripple letter";
+    content: "triple letter";
 }
 
-.tile.tripple-word {
+.tile.triple-word {
     background-color: #DC1F28;
 }
 
-.tile.tripple-word:empty::before {
+.tile.triple-word:empty::before {
     font-variant: small-caps;
     font-size: 7pt;
     line-height: 10pt;
     text-align: center;
-    content: "tripple word";
+    content: "triple word";
 }
 
 .tile {
@@ -99,6 +99,7 @@
     position: relative;
     text-align: center;
     float: left;
+    cursor: pointer;
 }
 
 .tile span.letter {
@@ -106,4 +107,8 @@
     font-weight: bold;
     line-height: 26pt;
     text-transform: uppercase;
+}
+
+.tile:hover {
+    background-color: white;
 }

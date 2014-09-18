@@ -30,7 +30,7 @@ var SPECIAL_TILES = [
       {"row": 14, "col": 2}, {"row": 14, "col": 14}
     ]
   }, {
-    "styleclass": "tripple-letter",
+    "styleclass": "triple-letter",
     // "scorefunct": "calcTL",
     "tiles": [
       {"row": 2, "col": 6}, {"row": 2, "col": 10},
@@ -39,7 +39,7 @@ var SPECIAL_TILES = [
       {"row": 14, "col": 6}, {"row": 14, "col": 10}
     ]
   }, {
-    "styleclass": "tripple-word",
+    "styleclass": "triple-word",
     // "scorefunct": "calcTW",
     "tiles": [
       {"row": 1, "col": 1}, {"row": 1, "col": 8}, {"row": 1, "col": 15},
@@ -88,6 +88,10 @@ createGameBoard = function() {
       // tileDiv.prop("scorefunct", scorefunct);
     }
   }
+
+  $("#board .tile").click(function() {
+    console.log("clicked " + $(this).parent().data("row") + " : " + $(this).data("col"));
+  });
 };
 
 getTileDiv = function(row, col) {
