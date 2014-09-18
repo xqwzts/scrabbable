@@ -4,10 +4,14 @@
     <link rel="stylesheet" type="text/css" href="css/main.css"></link>
   </head>
   <body>
-    <div id="board">
+    <div id="board"></div>
+    <div id="scoreholder">
+      <ul>
+        <li><span>vic</span><span>123</span></li>
+        <li><span>bob</span><span>32</span></li>
+      </ul>
     </div>
-    <div id="rack">
-    </div>
+    <div id="rack"></div>
     <script src="js/jquery-2.1.1.min.js"></script>
     <script src="js/main.js"></script>
     <script src="js/jquery-ui.min.js"></script>
@@ -36,6 +40,11 @@ x- Select random letters into user's rack
 12- Localization based on https://en.wikipedia.org/wiki/Scrabble_letter_distributions
 13- When the last letter is drawn from the bag... notify bag empty
 x- Draw player rack div
-15- Allow drag and drop to reorder letters in the rack
-16- Allow drag and drop to place letters on the board
+x- Allow drag and drop to reorder letters in the rack
+x- Allow drag and drop to place letters on the board
+17- Confirmation to end turn and check if placed tiles are valid:
+    - valid: removeclass dirty, remove draggable, calculate score
+    - invalid: alert(invalid) do nothing
+18- Display player name and score
+19- Implement game loop
 -->

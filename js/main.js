@@ -75,7 +75,7 @@ var SPECIAL_TILES = [
     "tiles": [
       {"row": 1, "col": 1}, {"row": 1, "col": 8}, {"row": 1, "col": 15},
       {"row": 8, "col": 1}, {"row": 8, "col": 15},
-      {"row": 15, "col": 8}, {"row": 15, "col": 8}, {"row": 15, "col": 15}
+      {"row": 15, "col": 1}, {"row": 15, "col": 8}, {"row": 15, "col": 15}
     ]
   }
 ];
@@ -98,9 +98,8 @@ $(function() {
     accept: ".tile",
     tolerance: "intersect",
     drop: function(e, u) {
-     targetTile = this;
-      draggedTile = u.draggable;
-      console.log(targetTile, draggedTile);
+      var targetTile = this;
+      var draggedTile = u.draggable;
 
       // make sure it was dropped in a row tile:
       if (!($(targetTile).hasClass("tile") && $(targetTile).parent().hasClass("row") && ($(targetTile).children().length == 0))) {
@@ -111,6 +110,7 @@ $(function() {
 
       var clone = draggedTile.clone()
       $(targetTile).append(clone);
+      $(targetTile).droppable("disable");
 
       clone.removeAttr("style");
       clone.addClass("tile dirty");
@@ -122,43 +122,35 @@ $(function() {
         helper: "clone",
         snap: "#board .tile",
         snapMode: "outer",
+        start: function(ev, ui) {
+          if ($(this).parent().hasClass("tile")) {
+            $(this).parent().droppable("enable");
+          }
+        },
+        stop: function() {
+          if ($(this).parent().hasClass("tile")) {
+            $(this).parent().droppable("disable");
+          }
+        },
         revert: function(targ) {
           if (targ == false) {
             return true;
           }
 
-          if (targ.hasClass("tile") || targ.attr("id") == "rack") {
-            $(this).detach();
-            return false;
+          var revert = true;
+
+          if (targ.hasClass("tile")) {
+            revert = false;
           }
 
-          return true;
+          if (targ.attr("id") == "rack") {
+            $(this).detach();
+            revert = false;
+          }
+
+          return revert;
         }
       });
-
-
-      // draggedTile.detach();
-      // // u.draggable.detach().appendTo($(this));
-      // $(this).append(newTile);
-
-      // $(draggedTile).detach();
-      // $(draggedTile).appendTo($(targetTile));
-
-      // when the turn ends the details will be copied over to this board tile and the sortable will be deleted, until then just snap it in place
-      // so it can still be dragged around and even returned to the rack!
-
-      // var letterAndScore = $(draggedTile).children();
-
-      // // place the letters in this row tile
-      // $(targetTile).addClass("dirty").append(letterAndScore).draggable({
-      //   connectToSortable: "#rack",
-      //   containment: "#rack #board"
-      // });
-
-
-      // // destroy the original rack tile
-      // $(draggedTile).detach();
-      // delete draggedTile;
     }
   });
 
