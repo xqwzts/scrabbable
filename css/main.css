@@ -1,0 +1,109 @@
+.tileTempl {
+    width: 60px;
+    height: 60px;
+    margin: 2px;
+    padding: 3px;
+    background-color: #ffffcc;
+    border: 2px solid #663300;
+    color: black;
+    border-radius: 4px;
+    font-family: Arial;
+    text-align: center;
+    position: relative;
+}
+
+.counter {
+    font-size: 8pt;
+    position: absolute;
+    top: 0px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    text-align: right;
+}
+
+.letter {
+    font-size: 40pt;
+    font-weight: bold;
+    line-height: 48pt;
+}
+
+.win-selected .tileTempl {
+    color: Black;
+}
+
+.row {
+    position: relative;
+    float: left;
+    width: 100%;
+    background-color: #cccccc;
+}
+
+.tile.double-letter {
+    background-color: #6BB5E6;
+}
+
+.tile.double-letter:empty::before {
+    font-variant: small-caps;
+    font-size: 7pt;
+    line-height: 10pt;
+    text-align: center;
+    content: "double letter";
+}
+
+.tile.double-word {
+    background-color: #C97F6C;
+}
+
+.tile.double-word:empty::before {
+    font-variant: small-caps;
+    font-size: 7pt;
+    line-height: 10pt;
+    text-align: center;
+    content: "double word";
+}
+
+.tile.tripple-letter {
+    background-color: #0E7AC7;
+}
+
+.tile.tripple-letter:empty::before {
+    font-variant: small-caps;
+    font-size: 7pt;
+    line-height: 10pt;
+    text-align: center;
+    content: "tripple letter";
+}
+
+.tile.tripple-word {
+    background-color: #DC1F28;
+}
+
+.tile.tripple-word:empty::before {
+    font-variant: small-caps;
+    font-size: 7pt;
+    line-height: 10pt;
+    text-align: center;
+    content: "tripple word";
+}
+
+.tile {
+    width: 34px;
+    height: 34px;
+    padding: 3px;
+    background-color: #ffffcc;
+    border: 2px solid #663300;
+    color: black;
+    border-radius: 4px;
+    font-family: Arial;
+    position: relative;
+    text-align: center;
+    float: left;
+}
+
+.tile span.letter {
+    font-size: 20pt;
+    font-weight: bold;
+    line-height: 26pt;
+    text-transform: uppercase;
+}
