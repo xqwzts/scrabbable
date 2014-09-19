@@ -35,7 +35,7 @@ var LETTERS = [
 var SPECIAL_TILES = [
   {
     "styleclass": "double-letter",
-    // "scorefunct": "calcDL",
+    "scorefunct": "doubleLetter",
     "tiles": [
       {"row": 1, "col": 4}, {"row": 1, "col": 12},
       {"row": 3, "col": 7}, {"row": 3, "col": 9},
@@ -49,7 +49,7 @@ var SPECIAL_TILES = [
     ]
   }, {
     "styleclass": "double-word",
-    // "scorefunct": "calcDW",
+    "scorefunct": "doubleWord",
     "tiles": [
       {"row": 2, "col": 2}, {"row": 2, "col": 14},
       {"row": 3, "col": 3}, {"row": 3, "col": 13},
@@ -62,7 +62,7 @@ var SPECIAL_TILES = [
     ]
   }, {
     "styleclass": "triple-letter",
-    // "scorefunct": "calcTL",
+    "scorefunct": "tripleLetter",
     "tiles": [
       {"row": 2, "col": 6}, {"row": 2, "col": 10},
       {"row": 6, "col": 2}, {"row": 6, "col": 6}, {"row": 6, "col": 10}, {"row": 6, "col": 14},
@@ -71,7 +71,7 @@ var SPECIAL_TILES = [
     ]
   }, {
     "styleclass": "triple-word",
-    // "scorefunct": "calcTW",
+    "scorefunct": "tripleWord",
     "tiles": [
       {"row": 1, "col": 1}, {"row": 1, "col": 8}, {"row": 1, "col": 15},
       {"row": 8, "col": 1}, {"row": 8, "col": 15},
@@ -123,7 +123,7 @@ createGameBoard = function() {
       // get the grid div corresponding to this tile and set it to the special
       var tileDiv = getTileDiv(tile["row"], tile["col"])
       tileDiv.addClass(styleclass);
-      // tileDiv.prop("scorefunct", scorefunct);
+      tileDiv.data("scorefunct", scorefunct);
     }
   }
 
@@ -248,9 +248,9 @@ setupDraggability = function() {
   });
 }
 
-checkSubmitability = function() {
+checkSubmitability = function(isFirstWord) {
   // get all dirty tiles on the board
-  var dirtyTiles = $("#board").find(".dirty");
+  var dirtyTiles = $("#board .dirty");
 
   // No dirty tiles means nothing placed on the board, enable the pass button
   if (dirtyTiles.length == 0) {
@@ -267,11 +267,11 @@ checkSubmitability = function() {
   var allColsMatch = true;
   var allRowsMatch = true;
   var tilePositions = unwrapTilePositions(dirtyTiles);
+  var gaps = [];
 
   if (validDirtyTiles) {
     var firstRow = tilePositions[0][0];
     var firstCol = tilePositions[0][1];
-    console.log(firstRow + ":" + firstCol);
     for (var i = 1; i < tilePositions.length; i++) {
       var currentRow = tilePositions[i][0];
       var currentCol = tilePositions[i][1];
@@ -289,8 +289,6 @@ checkSubmitability = function() {
   }
 
   // 2. all tiles must be connected: there can be no empty tiles between them
-  connectors = [];
-  var gaps = [];
   if (allColsMatch) {
     // if we matched by col then sort the tiles by row
     tilePositions.sort(sortByRow);
@@ -307,68 +305,78 @@ checkSubmitability = function() {
   }
 
   // for each gap check that the tile is actually empty or a connector
-  // if it is a connector add it to our connectors list
-  // if it is empty invalidate and fail
+  // As soon as we hit an empty one invalidate and fail
   for (var i = 0; i < gaps.length; i++) {
-    if (getTileDiv(gaps[i][0], gaps[i][1]).children().length > 0) {
-      connectors.push(gaps[i]);
-    }  else {
+    if (!getTileDiv(gaps[i][0], gaps[i][1]).children().length > 0) {
       console.log("non-connected gaps fail");
       validDirtyTiles = false;
       break;
     }
   }
 
-  // 3. Get a list of all the tiles our dirty tiles are connected to, we'll have to check those later to make sure they all form valid words.
+  var isConnected = false;
+  var words = [];
+  // Generate our list of words:
   if (allColsMatch) {
-    // check top edge
-    var topTile = tilePositions[0]; 
-    if (topTile[0] > 1) {
-      if (getTileDiv(topTile[0]-1, topTile[1]).children().length > 0) {
-        console.log("connector found: ", [topTile[0]-1, topTile[1]]);
-        connectors.push([topTile[0]-1, topTile[1]]);
+    // find our real top edge: keep going until we hit a gap:
+    var topEdgePosition = getTopEdge(tilePositions[0][0], tilePositions[0][1]);
+
+    // now find the vertical word determined by this top edge;
+    var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
+    if (findWordRes.found) {
+      words.push(findWordRes.word);
+    }
+    if (!isConnected && findWordRes.hasConnection) {
+      isConnected = true;
+    }
+
+    // each dirty tile could also be connected horizontaly, so get any possible horizontal words
+    for (var i = 0; i < tilePositions.length; i++) {
+      var leftEdgePosition = getLeftEdge(tilePositions[i][0], tilePositions[i][1]);
+      var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
+      if (findWordRes.found) {
+        words.push(findWordRes.word);
+      }
+      if (!isConnected && findWordRes.hasConnection) {
+        isConnected = true;
       }
     }
-    // check bottom edge
-    var botTile = tilePositions[tilePositions.length-1];
-    if (botTile[0] < 15) {
-     if (getTileDiv(botTile[0]+1, botTile[1]).children().length > 0) {
-        console.log("connector found: ", [botTile[0]+1, botTile[1]]);
-        connectors.push([botTile[0]+1, botTile[1]]);
-      } 
-    }
-    // EVERY SINGLE OTHER TILE HERE can still be connected from the left and right... need to find those connectors too!
-    $.merge(connectors, getHorizontalConnectors(tilePositions));
   } else if (allRowsMatch) {
-    // check left edge
-    var leftTile = tilePositions[0];
-    if (leftTile[1] > 1) {
-      if (getTileDiv(leftTile[0], leftTile[1]-1).children().length > 0) {
-        console.log("connector found: ", [leftTile[0], leftTile[1]-1]);
-        connectors.push([leftTile[0], leftTile[1]-1]);
+    // find our real left edge: keep going until we hit a gap:
+    var leftEdgePosition = getLeftEdge(tilePositions[0][0], tilePositions[0][1]);
+
+    // now find the horizontal word determined by this left edge:
+    var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
+    if (findWordRes.found) {
+      words.push(findWordRes.word);
+    }
+    if (!isConnected && findWordRes.hasConnection) {
+      isConnected = true;
+    }
+
+    // each dirty tile could also be connected vertically, so get any possible vertical words
+    for (var i = 0; i < tilePositions.length; i++) {
+      var topEdgePosition = getTopEdge(tilePositions[i][0], tilePositions[i][1]);
+      var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
+      if (findWordRes.found) {
+        words.push(findWordRes.word);
+      }
+      if (!isConnected && findWordRes.hasConnection) {
+        isConnected = true;
       }
     }
-    // check the right edeg
-    var rightTile = tilePositions[tilePositions.length-1];
-    if (rightTile < 15) {
-      if (getTileDiv(rightTile[0], rightTile[1]+1).children().length > 0) {
-        console.log("connector found: ", [rightTile[0], rightTile[1]+1]);
-        connectors.push([rightTile[0], rightTile[1]+1]);
-      }
-    }
-    // Now check the vertical connectors for every single tile
-    $.merge(connectors, getVerticalConnectors(tilePositions));
   }
 
   // 4. unless this is the first word then we must attached to another used tile on the board
-  if (connectors.length == 0) {
+  if (!isFirstWord && !isConnected) {
     console.log("no connectors fail")
     validDirtyTiles = false;
   }
 
-
   if (validDirtyTiles) {
-    enableSubmitButton(); 
+    var turnScore = calculateScore(words);
+    displayTempScore(turnScore);
+    enableSubmitButton(turnScore);
   } else {
     disableSubmitButton();
   }
@@ -412,54 +420,75 @@ findGapsInCols = function(tilePositions, row) {
   return gaps;
 }
 
-getHorizontalConnectors = function(tilePositions) {
-  var connectors = [];
-
-  for (var i = 0; i < tilePositions.length; i++) {
-    var theTile = tilePositions[i];
-    // check left tile
-    if (theTile[1] > 1) {
-      if (getTileDiv(theTile[0], theTile[1]-1).children().length > 0) {
-        connectors.push([theTile[0], theTile[1]-1]);
-      }
-    }
-    // check right tile
-    if (theTile[1] < 15) {
-      if (getTileDiv(theTile[0], theTile[1]+1).children().length > 0) {
-        connectors.push([theTile[0], theTile[1]+1]);
-      }
+getTopEdge = function(row, col) {
+  while (row > 1) {
+    if (getTileDiv(row-1, col).children().length > 0) {
+      row--;
+    } else {
+      break;
     }
   }
-
-  if (connectors.length > 0) {
-    console.log("connectors foumd", connectors);
-  }
-
-  return connectors;
+  return ([row, col]);
 }
 
-getVerticalConnectors = function(tilePositions) {
-  var connectors = [];
+getLeftEdge = function(row, col) {
+  while (col > 1) {
+    if (getTileDiv(row, col-1).children().length > 0) {
+      col--;
+    } else {
+      break;
+    }
+  }
+  return ([row, col]);
+}
 
-  for (var i = 0; i < tilePositions.length; i++) {
-    var theTile = tilePositions[i];
-    // check the top tile
-    if (theTile[0] > 1) {
-      if (getTileDiv(theTile[0]-1, theTile[1]).children().length > 0) {
-        connectors.push([theTile[0]-1, theTile[1]]);
+findVerticalWord = function(topEdgeRow, col) {
+  var res = {
+    found: false
+  };
+  var word = [];
+  for (var i = topEdgeRow; i <= ROW_COUNT; i++) {
+    var tileDiv = getTileDiv(i, col);
+    if (tileDiv.children().length > 0) {
+      word.push([i, col]);
+      if (tileDiv.children(".dirty").length == 0) {
+        res.hasConnection = true;
       }
-    }
-    // check the bottom tile
-    if (theTile[0] < 15) {
-      if (getTileDiv(theTile[0]+1, theTile[1]).children().length > 0) {
-        connectors.push([theTile[0]+1, theTile[1]]);
-      }
+    } else {
+      break;
     }
   }
-  if (connectors.length > 0) {
-    console.log("connectors foumd", connectors);
+  if (word.length > 0) {
+    res.found = true;
+    res.word = word;
   }
-  return connectors;
+
+  return res;
+}
+
+findHorizontalWord = function(row, leftEdgeCol) {
+  var res = {
+    found: false
+  }
+  var word = [];
+  for (var i = leftEdgeCol; i <= COL_COUNT; i++) {
+    var tileDiv = getTileDiv(row, i);
+    if (tileDiv.children().length > 0) {
+      word.push([row, i]);
+      if (tileDiv.children(".dirty").length == 0) {
+        res.hasConnection = true;
+      }
+    } else {
+      break;
+    }
+  }
+
+  if (word.length > 0) {
+    res.found = true;
+    res.word = word;
+  }
+
+  return word;
 }
 
 unwrapTilePositions = function(tileList) {
@@ -468,6 +497,59 @@ unwrapTilePositions = function(tileList) {
     unwrappedPositions.push([$(tileList[i]).parent().parent().data("row"), $(tileList[i]).parent().data("col")]);
   }
   return unwrappedPositions;
+}
+
+calculateScore = function(words) {
+  // get all dirty tiles on the board
+  var totalScore = 0;
+
+  for (var i = 0; i < words.length; i++) {
+    var word = words[i];
+    var wordScore = 0;
+    var wordMultiplier = 0;
+
+    // get all the tiles in this word and calculate the word's score
+    // scorefuncts only count for dirty tiles
+    for (var k = 0; k < word.length; k++) {
+      var letterScore = 0;
+      var letterMultiplier = 0;
+      var tileMultipliers = [0, 0];
+
+      // 1. get the base tile
+      var baseTile = getTileDiv(word[k][0], word[k][1]);
+      var letterTile = baseTile;
+      
+      // 2. check if it has a dirty tile
+      if (baseTile.children(".dirty")) {
+        letterTile = baseTile.children(".dirty");
+        var scoreFunctionName = baseTile.data("scorefunct");
+        if (scoreFunctionName) {
+          tileMultipliers = window[scoreFunctionName]();
+        }
+      }
+
+      letterScore = parseInt(letterTile.children(".letter-score").text());
+      letterMultiplier += tileMultipliers[0];
+      wordMultiplier += tileMultipliers[1];
+
+      if (letterMultiplier > 0) {
+        letterScore *= letterMultiplier;
+      }
+
+      wordScore += letterScore;
+    }
+
+    if (wordMultiplier > 0) {
+      wordScore *= wordMultiplier;
+    }
+
+    totalScore += wordScore;
+  }
+  return totalScore;
+}
+
+displayTempScore = function(score) {
+  $("#tempScore").text(score);
 }
 
 enableSubmitButton = function() {
@@ -484,4 +566,20 @@ enablePassButton = function() {
 
 disablePassButton = function() {
   $("#passButton").attr("disabled", "disabled");
+}
+
+doubleLetter = function() {
+  return [2, 0];
+}
+
+tripleLetter = function() {
+  return [3, 0];
+}
+
+doubleWord = function() {
+  return [0, 2];
+}
+
+tripleWord = function() {
+  return [0, 3];
 }
