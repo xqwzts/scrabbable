@@ -263,28 +263,24 @@ checkSubmitability = function() {
   var validDirtyTiles = true;
 
   // If we have dirty tiles make sure they're in valid positions
-  // 1. unless this is the first word then they must be attached to another used tile on the board
+  // 1. all dirty must be in either the same row or column
+  var allColsMatch = true;
+  var allRowsMatch = true;
+  var tilePositions = unwrapTilePositions(dirtyTiles);
 
-
-  // 2. all dirty must be in either the same row or column
   if (validDirtyTiles) {
-    var firstCol = $(dirtyTiles[0]).parent().data("col");
-    var firstRow = $(dirtyTiles[0]).parent().parent().data("row");
+    var firstRow = tilePositions[0][0];
+    var firstCol = tilePositions[0][1];
     console.log(firstRow + ":" + firstCol);
-    var allColsMatch = true;
-    var allRowsMatch = true;
-    for (var i = 1; i < dirtyTiles.length; i++) {
-      if (allColsMatch) {
-        var currentCol = $(dirtyTiles[i]).parent().data("col");
-        if (currentCol != firstCol) {
-          allColsMatch = false;
-        }
+    for (var i = 1; i < tilePositions.length; i++) {
+      var currentRow = tilePositions[i][0];
+      var currentCol = tilePositions[i][1];
+
+      if (allColsMatch && currentCol != firstCol) {
+        allColsMatch = false;
       }
-      if (allRowsMatch) {
-        var currentRow = $(dirtyTiles[i]).parent().parent().data("row");
-        if (currentRow != firstRow) {
-          allRowsMatch = false;
-        }
+      if (allRowsMatch && currentRow != firstRow) {
+        allRowsMatch = false;
       }
     }
     if (!allColsMatch && !allRowsMatch) {
@@ -292,13 +288,84 @@ checkSubmitability = function() {
     }
   }
 
-  // 3. all tiles must be connected: there can be no empty tiles between them
-  for (var i = 0; i < dirtyTiles.length; i++) {
-    if (!noTileIsAnIsland(dirtyTiles[i])) {
+  // 2. all tiles must be connected: there can be no empty tiles between them
+  connectors = [];
+  var gaps = [];
+  if (allColsMatch) {
+    // if we matched by col then sort the tiles by row
+    tilePositions.sort(sortByRow);
+    var fixedCol = tilePositions[0][1];
+    // check for gaps
+    gaps = findGapsInRows(tilePositions, fixedCol);
+    
+  } else if (allRowsMatch) {
+    // if we matched by row then sort the tiles by col
+    tilePositions.sort(sortByCol);
+    var fixedRow = tilePositions[0][0];
+    // check for gaps
+    gaps = findGapsInCols(tilePositions, fixedRow);
+  }
+
+  // for each gap check that the tile is actually empty or a connector
+  // if it is a connector add it to our connectors list
+  // if it is empty invalidate and fail
+  for (var i = 0; i < gaps.length; i++) {
+    if (getTileDiv(gaps[i][0], gaps[i][1]).children().length > 0) {
+      connectors.push(gaps[i]);
+    }  else {
+      console.log("non-connected gaps fail");
       validDirtyTiles = false;
       break;
     }
   }
+
+  // 3. Get a list of all the tiles our dirty tiles are connected to, we'll have to check those later to make sure they all form valid words.
+  if (allColsMatch) {
+    // check top edge
+    var topTile = tilePositions[0]; 
+    if (topTile[0] > 1) {
+      if (getTileDiv(topTile[0]-1, topTile[1]).children().length > 0) {
+        console.log("connector found: ", [topTile[0]-1, topTile[1]]);
+        connectors.push([topTile[0]-1, topTile[1]]);
+      }
+    }
+    // check bottom edge
+    var botTile = tilePositions[tilePositions.length-1];
+    if (botTile[0] < 15) {
+     if (getTileDiv(botTile[0]+1, botTile[1]).children().length > 0) {
+        console.log("connector found: ", [botTile[0]+1, botTile[1]]);
+        connectors.push([botTile[0]+1, botTile[1]]);
+      } 
+    }
+    // EVERY SINGLE OTHER TILE HERE can still be connected from the left and right... need to find those connectors too!
+    $.merge(connectors, getHorizontalConnectors(tilePositions));
+  } else if (allRowsMatch) {
+    // check left edge
+    var leftTile = tilePositions[0];
+    if (leftTile[1] > 1) {
+      if (getTileDiv(leftTile[0], leftTile[1]-1).children().length > 0) {
+        console.log("connector found: ", [leftTile[0], leftTile[1]-1]);
+        connectors.push([leftTile[0], leftTile[1]-1]);
+      }
+    }
+    // check the right edeg
+    var rightTile = tilePositions[tilePositions.length-1];
+    if (rightTile < 15) {
+      if (getTileDiv(rightTile[0], rightTile[1]+1).children().length > 0) {
+        console.log("connector found: ", [rightTile[0], rightTile[1]+1]);
+        connectors.push([rightTile[0], rightTile[1]+1]);
+      }
+    }
+    // Now check the vertical connectors for every single tile
+    $.merge(connectors, getVerticalConnectors(tilePositions));
+  }
+
+  // 4. unless this is the first word then we must attached to another used tile on the board
+  if (connectors.length == 0) {
+    console.log("no connectors fail")
+    validDirtyTiles = false;
+  }
+
 
   if (validDirtyTiles) {
     enableSubmitButton(); 
@@ -307,41 +374,100 @@ checkSubmitability = function() {
   }
 }
 
-noTileIsAnIsland = function(tile) {
-  // check all 4 adjancent tiles and return true if any one of them has another tile, dirty or not, so long as it isn't empty
-  var tileCol = $(tile).parent().data("col");
-  var tileRow = $(tile).parent().parent().data("row");
+sortByRow = function(a, b) {
+  return a[0] - b[0];
+}
 
-  if (tileRow > 1) {
-    // 1. check above
-    if (getTileDiv(tileRow-1, tileCol).children().length > 0) {
-      return true;
+sortByCol = function(a, b) {
+  return a[1] - b[1];
+}
+
+findGapsInRows = function(tilePositions, col) {
+  var gaps = [];
+  for (var i = 0; i < tilePositions.length-1; i++) {
+    if ((tilePositions[i+1][0] - tilePositions[i][0]) > 1) {
+      // gap... for each value in between [i][0] and [i+1][0] we have a gap, keep a list of them
+      for (var k = tilePositions[i][0]+1; k < tilePositions[i+1][0]; k++) {
+        gaps.push([k, col]);
+      }
+    }
+  }
+  return gaps;
+}
+
+findGapsInCols = function(tilePositions, row) {
+  var gaps =[];
+  for (var i = 0; i < tilePositions.length-1; i++) {
+    if ((tilePositions[i+1][1] - tilePositions[i][1]) > 1) {
+      // gap... for each value in between [i][1] and [i+1][1] check that there is a non-empty tile, else break as invalid
+      for (var k = tilePositions[i][1]+1; k < tilePositions[i+1][1]; k++) {
+        // if (!getTileDiv(row, k).children().length > 0) {
+        //   return false;
+        // }
+         console.log("gap: " + row + ", " + k);
+         gaps.push([row, k]);
+      }
+    }
+  }
+  return gaps;
+}
+
+getHorizontalConnectors = function(tilePositions) {
+  var connectors = [];
+
+  for (var i = 0; i < tilePositions.length; i++) {
+    var theTile = tilePositions[i];
+    // check left tile
+    if (theTile[1] > 1) {
+      if (getTileDiv(theTile[0], theTile[1]-1).children().length > 0) {
+        connectors.push([theTile[0], theTile[1]-1]);
+      }
+    }
+    // check right tile
+    if (theTile[1] < 15) {
+      if (getTileDiv(theTile[0], theTile[1]+1).children().length > 0) {
+        connectors.push([theTile[0], theTile[1]+1]);
+      }
     }
   }
 
-  if (tileRow < 15) {
-    // 2. check below
-    if (getTileDiv(tileRow+1, tileCol).children().length > 0) {
-      return true;
-    }
+  if (connectors.length > 0) {
+    console.log("connectors foumd", connectors);
   }
 
-  if (tileCol > 1) {
-    // 3. check left
-    if (getTileDiv(tileRow, tileCol-1).children().length > 0) {
-      return true;
+  return connectors;
+}
+
+getVerticalConnectors = function(tilePositions) {
+  var connectors = [];
+
+  for (var i = 0; i < tilePositions.length; i++) {
+    var theTile = tilePositions[i];
+    // check the top tile
+    if (theTile[0] > 1) {
+      if (getTileDiv(theTile[0]-1, theTile[1]).children().length > 0) {
+        connectors.push([theTile[0]-1, theTile[1]]);
+      }
+    }
+    // check the bottom tile
+    if (theTile[0] < 15) {
+      if (getTileDiv(theTile[0]+1, theTile[1]).children().length > 0) {
+        connectors.push([theTile[0]+1, theTile[1]]);
+      }
     }
   }
-
-  if (tileCol < 15) {
-    // 4. check right
-    if (getTileDiv(tileRow, tileCol+1).children().length > 0) {
-      return true;
-    }
+  if (connectors.length > 0) {
+    console.log("connectors foumd", connectors);
   }
+  return connectors;
+}
 
-  return false;
-
+unwrapTilePositions = function(tileList) {
+  var unwrappedPositions = [];
+  for (var i = 0; i < tileList.length; i++) {
+    unwrappedPositions.push([$(tileList[i]).parent().parent().data("row"), $(tileList[i]).parent().data("col")]);
+  }
+  return unwrappedPositions;
 }
 
 enableSubmitButton = function() {
