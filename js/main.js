@@ -89,6 +89,7 @@ var SPECIAL_TILES = [
 
 var letter_bag = [];
 var player_rack = [];
+var isFirstWord = true;
 
 $(function() {
   createGameBoard();
@@ -254,8 +255,9 @@ setupDraggability = function() {
   });
 }
 
-checkDirtyValidity = function(isFirstWord) {
+checkDirtyValidity = function() {
   disablePassButton();
+  displayTempScore("");
   disableSubmitButton();
 
   // get all dirty tiles on the board
@@ -290,6 +292,11 @@ checkDirtyValidity = function(isFirstWord) {
   var getWordsRes = getWordsList(tilePositions, allColsMatch);
   var isConnected = getWordsRes.isConnected;
   var words = getWordsRes.words;
+
+  if (words.length < 1) {
+    console.log("invalid tiles: no words fail.");
+    return;
+  }
 
   // 4. unless this is the first word then we must attached to another used tile on the board
   if (!isFirstWord && !isConnected) {
