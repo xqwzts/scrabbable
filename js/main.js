@@ -187,7 +187,7 @@ setupDraggability = function() {
   $("#rack").sortable({
     connectWith: "#board .row .tile",
     receive: function() {
-      setTimeout(checkSubmitability, 50);
+      setTimeout(checkDirtyValidity, 50);
     }
   });
 
@@ -214,7 +214,7 @@ setupDraggability = function() {
 
       delete draggedTile;
 
-      setTimeout(checkSubmitability, 50);
+      setTimeout(checkDirtyValidity, 50);
 
       clone.draggable({
         connectToSortable: "#rack",
@@ -254,7 +254,10 @@ setupDraggability = function() {
   });
 }
 
-checkSubmitability = function(isFirstWord) {
+checkDirtyValidity = function(isFirstWord) {
+  disablePassButton();
+  disableSubmitButton();
+
   // get all dirty tiles on the board
   var dirtyTiles = $("#board .dirty");
 
@@ -264,58 +267,24 @@ checkSubmitability = function(isFirstWord) {
     return;
   }
 
-  disablePassButton();
-
-  var validDirtyTiles = true;
-
   // If we have dirty tiles make sure they're in valid positions
   // 1. all dirty must be in either the same row or column
-  var allColsMatch = true;
-  var allRowsMatch = true;
   var tilePositions = unwrapTilePositions(dirtyTiles);
-  var gaps = [];
 
-  var firstRow = tilePositions[0][0];
-  var firstCol = tilePositions[0][1];
-  for (var i = 1; i < tilePositions.length; i++) {
-    var currentRow = tilePositions[i][0];
-    var currentCol = tilePositions[i][1];
+  var allColsOrRowsMatchRes = allColsOrRowsMatch(tilePositions);
+  var allColsMatch = allColsOrRowsMatchRes.allColsMatch;
+  var allRowsMatch = allColsOrRowsMatchRes.allRowsMatch;
 
-    if (allColsMatch && currentCol != firstCol) {
-      allColsMatch = false;
-    }
-    if (allRowsMatch && currentRow != firstRow) {
-      allRowsMatch = false;
-    }
-  }
   if (!allColsMatch && !allRowsMatch) {
-    validDirtyTiles = false;
+    console.log("invalid tiles: non-unique row/col fail.")
+    return;
   }
 
-  // 2. all tiles must be connected: there can be no empty tiles between them
-  if (allColsMatch) {
-    // if we matched by col then sort the tiles by row
-    tilePositions.sort(sortByRow);
-    var fixedCol = tilePositions[0][1];
-    // check for gaps
-    gaps = findGapsInRows(tilePositions, fixedCol);
-    
-  } else if (allRowsMatch) {
-    // if we matched by row then sort the tiles by col
-    tilePositions.sort(sortByCol);
-    var fixedRow = tilePositions[0][0];
-    // check for gaps
-    gaps = findGapsInCols(tilePositions, fixedRow);
-  }
+  sortTilePositions(tilePositions, allColsMatch);
 
-  // for each gap check that the tile is actually empty or a connector
-  // As soon as we hit an empty one invalidate and fail
-  for (var i = 0; i < gaps.length; i++) {
-    if (!getTileDiv(gaps[i][0], gaps[i][1]).children().length > 0) {
-      console.log("non-connected gaps fail");
-      validDirtyTiles = false;
-      break;
-    }
+  if (!allGapsValid(tilePositions, allColsMatch)) {
+    console.log("invalid tiles: non-connected gaps fail.");
+    return;
   }
 
   var getWordsRes = getWordsList(tilePositions, allColsMatch);
@@ -324,17 +293,68 @@ checkSubmitability = function(isFirstWord) {
 
   // 4. unless this is the first word then we must attached to another used tile on the board
   if (!isFirstWord && !isConnected) {
-    console.log("no connectors fail")
-    validDirtyTiles = false;
+    console.log("invalid tiles: no connectors fail.")
+    return;
   }
 
-  if (validDirtyTiles) {
-    var turnScore = calculateScore(words);
-    displayTempScore(turnScore);
-    enableSubmitButton(turnScore);
-  } else {
-    disableSubmitButton();
+  var turnScore = calculateScore(words);
+  displayTempScore(turnScore);
+  enableSubmitButton(turnScore);
+}
+
+allColsOrRowsMatch = function(tilePositions) {
+  var res = {
+    allColsMatch: true,
+    allRowsMatch: true
+  };
+
+  var firstRow = tilePositions[0][0];
+  var firstCol = tilePositions[0][1];
+  for (var i = 1; i < tilePositions.length; i++) {
+    var currentRow = tilePositions[i][0];
+    var currentCol = tilePositions[i][1];
+
+    if (res.allColsMatch && currentCol != firstCol) {
+      res.allColsMatch = false;
+    }
+    if (res.allRowsMatch && currentRow != firstRow) {
+      res.allRowsMatch = false;
+    }
   }
+
+  return res;
+}
+
+sortTilePositions = function(tilePositions, verticalTiles) {
+  // if we matched by col then sort the tiles by row and vice versa.
+  if (verticalTiles) {
+    tilePositions.sort(sortByRow);
+  } else {
+    tilePositions.sort(sortByCol);
+  }
+}
+
+allGapsValid = function(tilePositions, verticalTiles) {
+  var gaps = [];
+  // all tiles must be connected: there can be no empty tiles between them
+  if (verticalTiles) {
+    // check for gaps
+    var fixedCol = tilePositions[0][1];
+    gaps = findGapsInRows(tilePositions, fixedCol);
+  } else {
+    // check for gaps
+    var fixedRow = tilePositions[0][0];
+    gaps = findGapsInCols(tilePositions, fixedRow);
+  }
+
+  // for each gap check that the tile is actually empty or a connector
+  // As soon as we hit an empty one invalidate and fail
+  for (var i = 0; i < gaps.length; i++) {
+    if (!getTileDiv(gaps[i][0], gaps[i][1]).children().length > 0) {
+      return false;
+    }
+  }
+  return true;
 }
 
 getWordsList = function(tilePositions, verticalTiles) {
