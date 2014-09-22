@@ -559,7 +559,7 @@ calculateScore = function(words) {
       var letterTile = baseTile;
       
       // 2. check if it has a dirty tile
-      if (baseTile.children(".dirty")) {
+      if (baseTile.children(".dirty").length > 0) {
         letterTile = baseTile.children(".dirty");
         var scoreFunctionName = baseTile.data("scorefunct");
         if (scoreFunctionName) {
