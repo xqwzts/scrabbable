@@ -77,6 +77,12 @@ var SPECIAL_TILES = [
       {"row": 8, "col": 1}, {"row": 8, "col": 15},
       {"row": 15, "col": 1}, {"row": 15, "col": 8}, {"row": 15, "col": 15}
     ]
+  }, {
+    "styleclass": "first-word",
+    "scorefunct": "doubleWord",
+    "tiles": [
+      {"row": 8, "col": 8}
+    ]
   }
 ];
 
@@ -269,23 +275,21 @@ checkSubmitability = function(isFirstWord) {
   var tilePositions = unwrapTilePositions(dirtyTiles);
   var gaps = [];
 
-  if (validDirtyTiles) {
-    var firstRow = tilePositions[0][0];
-    var firstCol = tilePositions[0][1];
-    for (var i = 1; i < tilePositions.length; i++) {
-      var currentRow = tilePositions[i][0];
-      var currentCol = tilePositions[i][1];
+  var firstRow = tilePositions[0][0];
+  var firstCol = tilePositions[0][1];
+  for (var i = 1; i < tilePositions.length; i++) {
+    var currentRow = tilePositions[i][0];
+    var currentCol = tilePositions[i][1];
 
-      if (allColsMatch && currentCol != firstCol) {
-        allColsMatch = false;
-      }
-      if (allRowsMatch && currentRow != firstRow) {
-        allRowsMatch = false;
-      }
+    if (allColsMatch && currentCol != firstCol) {
+      allColsMatch = false;
     }
-    if (!allColsMatch && !allRowsMatch) {
-      validDirtyTiles = false;
+    if (allRowsMatch && currentRow != firstRow) {
+      allRowsMatch = false;
     }
+  }
+  if (!allColsMatch && !allRowsMatch) {
+    validDirtyTiles = false;
   }
 
   // 2. all tiles must be connected: there can be no empty tiles between them
@@ -314,58 +318,9 @@ checkSubmitability = function(isFirstWord) {
     }
   }
 
-  var isConnected = false;
-  var words = [];
-  // Generate our list of words:
-  if (allColsMatch) {
-    // find our real top edge: keep going until we hit a gap:
-    var topEdgePosition = getTopEdge(tilePositions[0][0], tilePositions[0][1]);
-
-    // now find the vertical word determined by this top edge;
-    var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
-    if (findWordRes.found) {
-      words.push(findWordRes.word);
-    }
-    if (!isConnected && findWordRes.hasConnection) {
-      isConnected = true;
-    }
-
-    // each dirty tile could also be connected horizontaly, so get any possible horizontal words
-    for (var i = 0; i < tilePositions.length; i++) {
-      var leftEdgePosition = getLeftEdge(tilePositions[i][0], tilePositions[i][1]);
-      var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
-      if (findWordRes.found) {
-        words.push(findWordRes.word);
-      }
-      if (!isConnected && findWordRes.hasConnection) {
-        isConnected = true;
-      }
-    }
-  } else if (allRowsMatch) {
-    // find our real left edge: keep going until we hit a gap:
-    var leftEdgePosition = getLeftEdge(tilePositions[0][0], tilePositions[0][1]);
-
-    // now find the horizontal word determined by this left edge:
-    var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
-    if (findWordRes.found) {
-      words.push(findWordRes.word);
-    }
-    if (!isConnected && findWordRes.hasConnection) {
-      isConnected = true;
-    }
-
-    // each dirty tile could also be connected vertically, so get any possible vertical words
-    for (var i = 0; i < tilePositions.length; i++) {
-      var topEdgePosition = getTopEdge(tilePositions[i][0], tilePositions[i][1]);
-      var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
-      if (findWordRes.found) {
-        words.push(findWordRes.word);
-      }
-      if (!isConnected && findWordRes.hasConnection) {
-        isConnected = true;
-      }
-    }
-  }
+  var getWordsRes = getWordsList(tilePositions, allColsMatch);
+  var isConnected = getWordsRes.isConnected;
+  var words = getWordsRes.words;
 
   // 4. unless this is the first word then we must attached to another used tile on the board
   if (!isFirstWord && !isConnected) {
@@ -382,6 +337,66 @@ checkSubmitability = function(isFirstWord) {
   }
 }
 
+getWordsList = function(tilePositions, verticalTiles) {
+  var res = {
+    isConnected: false,
+    words: []
+  };
+
+  // Generate our list of words:
+  if (verticalTiles) {
+    // find our real top edge: keep going until we hit a gap:
+    var topEdgePosition = getTopEdge(tilePositions[0][0], tilePositions[0][1]);
+
+    // now find the vertical word determined by this top edge;
+    var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
+    if (findWordRes.found) {
+      res.words.push(findWordRes.word);
+    }
+    if (!res.isConnected && findWordRes.hasConnection) {
+      res.isConnected = true;
+    }
+
+    // each dirty tile could also be connected horizontaly, so get any possible horizontal words
+    for (var i = 0; i < tilePositions.length; i++) {
+      var leftEdgePosition = getLeftEdge(tilePositions[i][0], tilePositions[i][1]);
+      var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
+      if (findWordRes.found) {
+        res.words.push(findWordRes.word);
+      }
+      if (!res.isConnected && findWordRes.hasConnection) {
+        res.isConnected = true;
+      }
+    }
+  } else {
+    // find our real left edge: keep going until we hit a gap:
+    var leftEdgePosition = getLeftEdge(tilePositions[0][0], tilePositions[0][1]);
+
+    // now find the horizontal word determined by this left edge:
+    var findWordRes = findHorizontalWord(leftEdgePosition[0], leftEdgePosition[1]);
+    if (findWordRes.found) {
+      res.words.push(findWordRes.word);
+    }
+    if (!res.isConnected && findWordRes.hasConnection) {
+      res.isConnected = true;
+    }
+
+    // each dirty tile could also be connected vertically, so get any possible vertical words
+    for (var i = 0; i < tilePositions.length; i++) {
+      var topEdgePosition = getTopEdge(tilePositions[i][0], tilePositions[i][1]);
+      var findWordRes = findVerticalWord(topEdgePosition[0], topEdgePosition[1]);
+      if (findWordRes.found) {
+        res.words.push(findWordRes.word);
+      }
+      if (!res.isConnected && findWordRes.hasConnection) {
+        res.isConnected = true;
+      }
+    }
+  }
+
+  return res;
+}
+
 sortByRow = function(a, b) {
   return a[0] - b[0];
 }
@@ -396,6 +411,7 @@ findGapsInRows = function(tilePositions, col) {
     if ((tilePositions[i+1][0] - tilePositions[i][0]) > 1) {
       // gap... for each value in between [i][0] and [i+1][0] we have a gap, keep a list of them
       for (var k = tilePositions[i][0]+1; k < tilePositions[i+1][0]; k++) {
+        console.log("gap: " + k + ", " + col);
         gaps.push([k, col]);
       }
     }
@@ -407,11 +423,7 @@ findGapsInCols = function(tilePositions, row) {
   var gaps =[];
   for (var i = 0; i < tilePositions.length-1; i++) {
     if ((tilePositions[i+1][1] - tilePositions[i][1]) > 1) {
-      // gap... for each value in between [i][1] and [i+1][1] check that there is a non-empty tile, else break as invalid
       for (var k = tilePositions[i][1]+1; k < tilePositions[i+1][1]; k++) {
-        // if (!getTileDiv(row, k).children().length > 0) {
-        //   return false;
-        // }
          console.log("gap: " + row + ", " + k);
          gaps.push([row, k]);
       }
@@ -458,7 +470,7 @@ findVerticalWord = function(topEdgeRow, col) {
       break;
     }
   }
-  if (word.length > 0) {
+  if (word.length > 1) {
     res.found = true;
     res.word = word;
   }
@@ -483,12 +495,12 @@ findHorizontalWord = function(row, leftEdgeCol) {
     }
   }
 
-  if (word.length > 0) {
+  if (word.length > 1) {
     res.found = true;
     res.word = word;
   }
 
-  return word;
+  return res;
 }
 
 unwrapTilePositions = function(tileList) {

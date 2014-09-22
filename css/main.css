@@ -102,6 +102,20 @@
     content: "triple word";
 }
 
+.tile.first-word {
+    background-color: #FF7C7C;;
+}
+
+.tile.first-word:empty::before {
+    font-family: FontAwesome;
+    content: '\f005';
+    font-size: 28pt;
+    line-height: 26pt;
+    text-align: center;
+    vertical-align: middle;
+    display: inline-block;
+}
+
 .letter {
     font-size: 20pt;
     font-weight: bold;
