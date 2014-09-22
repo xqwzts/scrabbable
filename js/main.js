@@ -88,7 +88,6 @@ var SPECIAL_TILES = [
 
 
 var letter_bag = [];
-var player_rack = [];
 var isFirstWord = true;
 
 $(function() {
@@ -96,6 +95,7 @@ $(function() {
   loadLetters();
   fillRack();
   setupDraggability();
+  setupButtons();
 });
 
 createGameBoard = function() {
@@ -157,9 +157,8 @@ loadLetters = function() {
 }
 
 fillRack = function() {
-  while (player_rack.length < RACK_COUNT) {
+  while ($("#rack").children(".tile").length < RACK_COUNT) {
     var letter = getLetterFromBag();
-    player_rack.push(letter);
 
     var letterScore = getLetterScore(letter);
 
@@ -253,6 +252,48 @@ setupDraggability = function() {
       });
     }
   });
+}
+
+setupButtons = function() {
+  $("#submitButton").click(submitButtonClicked);
+  $("#passButton").click(passButtonClicked);
+}
+
+submitButtonClicked = function() {
+  // 1. disable everything until done
+  disableSubmitButton();
+  displayTempScore("");
+  // 2. if this was the first word, then nothing else will be.
+  if (isFirstWord) {
+    isFirstWord = false;
+  }
+  // 3. make the dirty tiles permanent.
+  makeDirtyTilesPermanent();
+
+  // 4. update the score.
+
+  // 5. refill the player's rack.
+  fillRack();
+}
+
+makeDirtyTilesPermanent = function() {
+  // get all dirty tiles on the board
+  var dirtyTiles = $("#board .dirty");
+
+  for (var i = 0; i < dirtyTiles.length; i++) {
+    var dirtyTile = dirtyTiles[i];
+    // move the letter and score spans into the parent tile
+    var parentTile = $(dirtyTile).parent(".tile");
+    parentTile.prepend($(dirtyTile).children());
+
+    // delete this dirty tile
+    $(dirtyTile).detach();
+    delete dirtyTile;
+  }
+}
+
+passButtonClicked = function() {
+  console.log("Pass button clicked");
 }
 
 checkDirtyValidity = function() {
