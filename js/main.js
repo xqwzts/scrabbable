@@ -164,7 +164,7 @@ fillRack = function() {
 
     var letterScore = getLetterScore(letter);
 
-    $("#rack").append("<div class='tile'><span class='letter'>" + letter + "</span><span class='letter-score'>" + letterScore + "</span></div>");
+    $("<div class='tile'><span class='letter'>" + letter + "</span><span class='letter-score'>" + letterScore + "</span><input type='checkbox' value='change' class='exchangecb'></div>").appendTo("#rack");
   }
 }
 
@@ -174,6 +174,10 @@ getLetterFromBag = function() {
     var letter = letter_bag.splice(randomIndex, 1)[0];
     return letter;
   }
+}
+
+addLetterToBag = function(letter) {
+  letter_bag.push(letter);
 }
 
 getLetterScore = function(letter) {
@@ -259,6 +263,7 @@ setupDraggability = function() {
 setupButtons = function() {
   $("#submitButton").click(submitButtonClicked);
   $("#passButton").click(passButtonClicked);
+  $("#exchangeButton").click(exchangeButtonClicked);
 }
 
 submitButtonClicked = function() {
@@ -293,7 +298,7 @@ makeDirtyTilesPermanent = function() {
     var dirtyTile = dirtyTiles[i];
     // move the letter and score spans into the parent tile
     var parentTile = $(dirtyTile).parent(".tile");
-    parentTile.prepend($(dirtyTile).children());
+    parentTile.prepend($(dirtyTile).children("span"));
 
     // delete this dirty tile
     $(dirtyTile).detach();
@@ -302,7 +307,40 @@ makeDirtyTilesPermanent = function() {
 }
 
 passButtonClicked = function() {
-  console.log("Pass button clicked");
+  // disable the pass button
+  disablePassButton();
+
+  // enable exchange checkboxes
+  $("#rack .exchangecb").show();
+
+  // display and enable no exchange button
+  showAndEnableExchangeButton();
+}
+
+exchangeButtonClicked = function() {
+  // 1. find all checked rack tiles to be exchanged
+  var exchangeTiles = $("#rack .exchangecb:checked").parent();
+
+  // 2. return each one to the bag
+  for (var i = 0; i < exchangeTiles.length; i++) {
+    var tile = exchangeTiles[i];
+    var letter = $(tile).children(".letter").text();
+    addLetterToBag(letter);
+    $(tile).detach();
+    delete tile;
+  }
+
+  // 3. hide the tile checkboxes
+  $("#rack .exchangecb").hide();
+
+  // 4. disable and hide the exchange button
+  hideAndDisableExchangeButton();
+
+  // 5. refill the rack
+  fillRack();
+
+  // 6. enable the pass button
+  enablePassButton();
 }
 
 checkDirtyValidity = function() {
@@ -655,6 +693,14 @@ enablePassButton = function() {
 
 disablePassButton = function() {
   $("#passButton").attr("disabled", "disabled");
+}
+
+showAndEnableExchangeButton = function() {
+  $("#exchangeButton").removeAttr("disabled").show();
+}
+
+hideAndDisableExchangeButton = function() {
+  $("#exchangeButton").attr("disabled", "disabled").hide();
 }
 
 doubleLetter = function() {

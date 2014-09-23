@@ -8,8 +8,9 @@
     <div id="board"></div>
     <div id="scoreholder"></div>
     <div id="rack"></div>
-    <input id="submitButton" type="submit" disabled="disabled" value="submit"/> <span id="tempScore"></span>
-    <input id="passButton" type="submit" value="pass"/>
+    <input id="submitButton" type="submit" disabled="disabled" value="submit" autocomplete="off"/> <span id="tempScore"></span>
+    <input id="passButton" type="submit" value="pass" autocomplete="off"/>
+    <input id="exchangeButton" type="submit" disabled="disabled" value="exchange" style="display: none;" autocomplete="off"/>
     <script src="js/jquery-2.1.1.min.js"></script>
     <script src="js/main.js"></script>
     <script src="js/jquery-ui.min.js"></script>
@@ -47,4 +48,5 @@ x- Allow drag and drop to place letters on the board
 19- Implement game loop
 x- Special start square
 x- Display temp score next to submit button
+x- Passing and exchanging tiles.
 -->

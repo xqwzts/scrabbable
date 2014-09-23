@@ -132,3 +132,10 @@
     height: 20px;
     text-align: right;
 }
+
+.exchangecb {
+    position: absolute;
+    right: 1px;
+    bottom: -10px;
+    display: none;
+}
