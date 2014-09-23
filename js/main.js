@@ -89,6 +89,8 @@ var SPECIAL_TILES = [
 
 var letter_bag = [];
 var isFirstWord = true;
+var score = 0;
+var dirtyScore = 0;
 
 $(function() {
   createGameBoard();
@@ -271,9 +273,16 @@ submitButtonClicked = function() {
   makeDirtyTilesPermanent();
 
   // 4. update the score.
+  updateScore();
 
   // 5. refill the player's rack.
   fillRack();
+}
+
+updateScore = function() {
+  score += dirtyScore;
+  dirtyScore = 0;
+  $("#scoreholder").text(score);
 }
 
 makeDirtyTilesPermanent = function() {
@@ -345,9 +354,9 @@ checkDirtyValidity = function() {
     return;
   }
 
-  var turnScore = calculateScore(words);
-  displayTempScore(turnScore);
-  enableSubmitButton(turnScore);
+  dirtyScore = calculateScore(words);
+  displayTempScore(dirtyScore);
+  enableSubmitButton();
 }
 
 allColsOrRowsMatch = function(tilePositions) {
