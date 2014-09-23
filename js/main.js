@@ -316,6 +316,9 @@ passButtonClicked = function() {
   // disable the pass button
   disablePassButton();
 
+  // disable sorting/dragging of the rack tiles
+  $("#rack").sortable("disable");
+
   // enable exchange checkboxes
   $("#rack .exchangecb").show();
 
@@ -347,6 +350,9 @@ exchangeButtonClicked = function() {
 
   // 6. enable the pass button
   enablePassButton();
+
+  // 7. enable sorting/dragging of the rack tiles
+  $("#rack").sortable("enable");
 }
 
 checkDirtyValidity = function() {
