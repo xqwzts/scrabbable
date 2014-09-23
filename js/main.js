@@ -270,10 +270,12 @@ submitButtonClicked = function() {
   // 1. disable everything until done
   disableSubmitButton();
   displayTempScore("");
+
   // 2. if this was the first word, then nothing else will be.
   if (isFirstWord) {
     isFirstWord = false;
   }
+  
   // 3. make the dirty tiles permanent.
   makeDirtyTilesPermanent();
 
@@ -282,6 +284,10 @@ submitButtonClicked = function() {
 
   // 5. refill the player's rack.
   fillRack();
+
+  // 6. reset the buttons
+  disableSubmitButton();
+  enablePassButton();
 }
 
 updateScore = function() {
